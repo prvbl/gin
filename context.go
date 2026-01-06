@@ -94,8 +94,9 @@ type Context struct {
 	// the browser to send this cookie along with cross-site requests.
 	sameSite http.SameSite
 
-	internalContextMu sync.RWMutex
-	internalContext   context.Context
+	internalContextMu          sync.RWMutex
+	internalContext            context.Context
+	internalContextCancelCause context.CancelCauseFunc
 }
 
 /************************************/
@@ -1387,7 +1388,7 @@ func (c *Context) WithInternalContext(ctx context.Context) {
 	c.internalContextMu.Lock()
 	defer c.internalContextMu.Unlock()
 
-	c.internalContext = ctx
+	c.internalContext, c.internalContextCancelCause = context.WithCancelCause(ctx)
 }
 
 // InternalContext provides the currently stored internal context in a thread safe manner.

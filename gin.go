@@ -645,6 +645,20 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	c.Request = req
 	c.reset()
 
+	// If we're using internalContext then we need to pass on errors from the request context
+	if c.useInternalContext() {
+		reqCtx := req.Context()
+		go func() {
+			<-reqCtx.Done()
+			if err := reqCtx.Err(); err != nil {
+				c.internalContextMu.RLock()
+				defer c.internalContextMu.RUnlock()
+
+				c.internalContextCancelCause(err)
+			}
+		}()
+	}
+
 	engine.handleHTTPRequest(c)
 
 	engine.pool.Put(c)
